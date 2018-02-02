@@ -97,9 +97,24 @@ float boxSDF(vec3 p, vec3 size) {
     return insideDistance + outsideDistance;
 }
 
+float sdTorus( vec3 p, vec2 t ) {
+  vec2 q = vec2(length(p.xz)-t.x,p.y);
+  return length(q)-t.y;
+}
+
+float sdHexPrism( vec3 p, vec2 h ) {
+    vec3 q = abs(p);
+    return max(q.z - h.y, max((q.x*0.866025+q.y*0.5),q.y)-h.x);
+}
+
 float opRep( vec3 p, vec3 c ) {
     vec3 q = mod(p, c) - 0.5 * c;
-    return boxSDF( q, vec3(1.9, 0.3, 1.9));
+    return boxSDF( q, vec3(1.0, 1.0, 1.0));
+} 
+
+float opRep2( vec3 p, vec3 c ) {
+    vec3 q = mod(p, c) - 0.5 * c;
+    return sdHexPrism( q, vec2(1.0, 2.0));
 } 
 
 //SDF for sphere at origin
@@ -141,10 +156,10 @@ float sdCapsule( vec3 p, vec3 a, vec3 b, float r )
 float softshadow( in vec3 ro, in vec3 rd, float mint, float maxt, float k )
 {
     float res = 1.0;
-    for( float t=mint; t < maxt; )
+    for( float t = mint; t < maxt; t++)
     {
         float h = 0.0;
-        if( h<0.001 )
+        if( h < 0.001 )
             return 0.0;
         res = min( res, k * h / t );
         t += h;
@@ -178,6 +193,11 @@ float opCheapBend( vec3 p ) {
 //    return clamp(res, 0.25, 1.0);
 // }
 
+// cosine based palette, 4 vec3 params
+vec3 palette( in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d )
+{
+    return a + b*cos( 6.28318*(c*t+d) );
+}
 
 /**
  * SDF describing the scene.
@@ -191,8 +211,11 @@ float sceneSDF(vec3 samplePoint) {
     //st = rotateY(u_Time / 2.0) * samplePoint;
 
     //plane
-    vec3 s = Tx(st, vec3(0.0, -1.0, 0.0));
-    float boxes = opRep(s, vec3(2.0, 0.0, 1.95));
+    vec3 s = Tx(st, vec3(0.0, -1.2, 0.0));
+    float boxes = opRep(s, vec3(1.1, 0.0, 1.3));
+
+    vec3 s2 = Tx(st, vec3(0.0, -3.0, -10.0));
+    float boxesBack = opRep2(s2, vec3(2.0, 2.0, 0.0)); 
 
     //top of heart
     vec3 ellipseRadius = vec3(1.1, 2.2, 0.9);
@@ -291,8 +314,8 @@ float sceneSDF(vec3 samplePoint) {
     body = opBlend(leg2, body);
 
     float bodyAndHead = opU(body, head);
-
-    return opU(bodyAndHead, boxes);
+    float boxed = opU(boxesBack, boxes);
+    return opU(bodyAndHead, boxed);
 }
 
 /**
@@ -306,6 +329,83 @@ float sceneSDF(vec3 samplePoint) {
  * start: the starting distance away from the eye
  * end: the max distance away from the ey to march before giving up
  */
+
+ // 3D Perlin Noise
+//	Simplex 3D Noise 
+//	by Ian McEwan, Ashima Arts
+//
+vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+
+float snoise(vec3 v){ 
+  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+
+// First corner
+  vec3 i  = floor(v + dot(v, C.yyy) );
+  vec3 x0 =   v - i + dot(i, C.xxx) ;
+
+// Other corners
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min( g.xyz, l.zxy );
+  vec3 i2 = max( g.xyz, l.zxy );
+
+  //  x0 = x0 - 0. + 0.0 * C 
+  vec3 x1 = x0 - i1 + 1.0 * C.xxx;
+  vec3 x2 = x0 - i2 + 2.0 * C.xxx;
+  vec3 x3 = x0 - 1. + 3.0 * C.xxx;
+
+// Permutations
+  i = mod(i, 289.0 ); 
+  vec4 p = permute( permute( permute( 
+             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+           + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) 
+           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+
+// Gradients
+// ( N*N points uniformly over a square, mapped onto an octahedron.)
+  float n_ = 1.0/7.0; // N=7
+  vec3  ns = n_ * D.wyz - D.xzx;
+
+  vec4 j = p - 49.0 * floor(p * ns.z *ns.z);  //  mod(p,N*N)
+
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+
+  vec4 x = x_ *ns.x + ns.yyyy;
+  vec4 y = y_ *ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+
+  vec4 b0 = vec4( x.xy, y.xy );
+  vec4 b1 = vec4( x.zw, y.zw );
+
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+
+  vec3 p0 = vec3(a0.xy,h.x);
+  vec3 p1 = vec3(a0.zw,h.y);
+  vec3 p2 = vec3(a1.xy,h.z);
+  vec3 p3 = vec3(a1.zw,h.w);
+
+//Normalise gradients
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  p0 *= norm.x;
+  p1 *= norm.y;
+  p2 *= norm.z;
+  p3 *= norm.w;
+
+// Mix final noise value
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
+                                dot(p2,x2), dot(p3,x3) ) );
+}
+
 float shortestDistanceToSurface(vec3 eye, vec3 marchingDirection, float start, float end) {
     float depth = start;
     for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
@@ -343,8 +443,6 @@ vec3 estimateNormal(vec3 p) {
  * eye: the position of the camera
  * lightPos: the position of the light
  * lightIntensity: color/intensity of the light
- *
- * See https://en.wikipedia.org/wiki/Phong_reflection_model#Description
  */
 vec3 phongContribForLight(vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 eye,
                           vec3 lightPos, vec3 lightIntensity) {
@@ -382,15 +480,13 @@ vec3 phongContribForLight(vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 eye,
  * alpha: Shininess coefficient
  * p: position of point being lit
  * eye: the position of the camera
- *
- * See https://en.wikipedia.org/wiki/Phong_reflection_model#Description
  */
 vec3 phongIllumination(vec3 k_a, vec3 k_d, vec3 k_s, float alpha, vec3 p, vec3 eye) {
     const vec3 ambientLight = 0.5 * vec3(1.0, 1.0, 1.0);
     vec3 color = ambientLight * k_a;
     
-    vec3 lightPos = vec3(4.0, 2.0, 4.0);
-    vec3 lightIntensity = vec3(0.4, 0.4, 0.4);
+    vec3 lightPos = vec3(2.0, 10.0, 6.0);
+    vec3 lightIntensity = vec3(0.5, 0.4, 0.4);
     
     color += phongContribForLight(k_d, k_s, alpha, p, eye,
                                   lightPos,
@@ -430,35 +526,45 @@ void main() {
     //screen resolution
     vec2 u_Resolution = vec2(u_Width, u_Height);
     //View from eye
-	vec3 viewDir = rayDirection(45.0, u_Resolution.xy, gl_FragCoord.xy);
+	vec3 rayDir = rayDirection(45.0, u_Resolution.xy, gl_FragCoord.xy);
     //camera position
-    vec3 eye = vec3(0.0, 3.0, 20.0);
+    vec3 eye = vec3(0.0, 1.0, 40.0);
 
     //return a transform matrix that will transform a ray from view space to world coordinates,
     //given eye point, camera target, an up vector
     mat3 viewToWorld = viewMatrix(eye, vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
     
-    vec3 worldDir = viewToWorld * viewDir;
-    
+    vec3 worldDir = viewToWorld * rayDir;
+
+    //sun
+    vec3 sunDir = normalize(vec3(0, 0.01, 1.0));  //Sun position
+    float sunSize = 30.0; // Sun can exist b/t 0 and 30 degrees from sunDir
+    float sunAngle = acos(dot(rayDir, sunDir)) * 360.0 / PI;
+
+    // if(sunAngle <= sunSize) {
+    //     out_Col = vec4(1.0);
+    // }
+    // else {
+    //     out_Col = vec4(0.1);
+    // }
+
     float dist = shortestDistanceToSurface(eye, worldDir, MIN_DIST, MAX_DIST);
     
     // Didn't hit anything
     if (dist > MAX_DIST - EPSILON) {
-        out_Col = vec4(0.0, 0.0, 0.0, 0.0);
-		return;
+        float s = pow(max(0.0, snoise(rayDir * 4e2)), 18.0);
+        out_Col = vec4(0.8, 0.2, 0.3, 1.0);
     }
     
     // The closest point on the surface to the eyepoint along the view ray
     vec3 p = eye + dist * worldDir;
     
     // Use the surface normal as the ambient color of the material
-    vec3 K_a = (estimateNormal(p) + vec3(1.0)) / 2.0;
+    vec3 K_a = (estimateNormal(p) + vec3(1.0)) / 1.5;
     vec3 K_d = K_a;
     vec3 K_s = vec3(1.0, 1.0, 1.0);
-    float shininess = 10.0;
+    float shininess = 100.0;
     
-
     vec3 color = phongIllumination(K_a, K_d, K_s, shininess, p, eye);
-    
-    out_Col = vec4(.9, 0.0, 0.0, 0.0) + vec4(color, 1.0);
+    out_Col = vec4(0.2, 0.0, 0.0, 0.0) + vec4(color, 1.0);
 }
