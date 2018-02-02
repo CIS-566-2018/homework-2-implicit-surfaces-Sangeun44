@@ -229,9 +229,9 @@ float sceneSDF(vec3 samplePoint) {
     vec3 mouth1 = vec3(0.35, 0.2, 0.2);
     float mouthShape = sdEllipsoid(mouthMove, mouth1);
     
-    float mr = 0.03;
-    vec3 ma1 = vec3(0.4, 1.8, 0.25);
-    vec3 mb1 = vec3(-0.4, 1.8, 0.25);
+    float mr = 0.05;
+    vec3 ma1 = vec3(0.4, 3.75, 0.25);
+    vec3 mb1 = vec3(-0.4, 3.75, 0.25);
     float open = sdCapsule(st, ma1, mb1, mr);
 
     float mouth = opS(mouthShape, open);
