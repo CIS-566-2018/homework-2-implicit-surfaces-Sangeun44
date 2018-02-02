@@ -60,20 +60,14 @@ Write-Up
 6. Parts that animate in interesting ways
     * The character can stretch like Luffy from One Piece
 7. A background that isn't a constant color
-    * In addition to light source, used a cosine color palette
+    * In addition to light source, used a cosine color palette that changes with a strict sine curve
 
 ScreenShot: 
 ![](tata.png)
-4. Optional features (for added credit):
-    * Ambient occlusion
-    * Soft shadows
-    * Extra optimizations (explain in your readme)
-    * Volumetric marching
-    * Marching height fields / non-SDF surfaces with reasonable speed
-    * Toggleable controllable camera
 
-[link to github] ()
+[link to github]()
+
 External Source:
-[Jamie Wong](http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/)
-[real-time subsurface scattering approximation](https://colinbarrebrisebois.com/2011/03/07/gdc-2011-approximating-translucency-for-a-fast-cheap-and-convincing-subsurface-scattering-look/).
-[IQ SDF](http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm)
+* [Jamie Wong](http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/)
+* [real-time subsurface scattering approximation](https://colinbarrebrisebois.com/2011/03/07/gdc-2011-approximating-translucency-for-a-fast-cheap-and-convincing-subsurface-scattering-look/).
+* [IQ SDF](http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm)
