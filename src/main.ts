@@ -5,12 +5,14 @@ import Square from './geometry/Square';
 import Camera from './Camera';
 import {setGL} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
+import { lchmod } from 'fs';
 
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
   // TODO: add any controls you want
 };
+let count: number = 0;
 
 let screenQuad: Square;
 
@@ -65,12 +67,16 @@ function main() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // TODO: get / calculate relevant uniforms to send to shader here
+   
+    count += 0.01;
     // TODO: send uniforms to shader
-
+    raymarchShader.setResolution(window.innerHeight, window.innerWidth);
+    raymarchShader.setTime(count);
     // March!
     raymarchShader.draw(screenQuad);
 
     // TODO: more shaders to layer / process the first one? (either via framebuffers or blending)
+
 
     stats.end();
 

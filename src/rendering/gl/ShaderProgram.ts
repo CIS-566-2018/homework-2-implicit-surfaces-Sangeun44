@@ -24,6 +24,9 @@ class ShaderProgram {
   attrPos: number;
 
   unifView: WebGLUniformLocation;
+  unifWidth: WebGLUniformLocation;
+  unifHeight: WebGLUniformLocation;
+  unifTime: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -41,6 +44,9 @@ class ShaderProgram {
 
     // TODO: add other attributes here
     this.unifView   = gl.getUniformLocation(this.prog, "u_View");
+    this.unifHeight = gl.getUniformLocation(this.prog, "u_Height");
+    this.unifWidth = gl.getUniformLocation(this.prog, "u_Width");
+    this.unifTime = gl.getUniformLocation(this.prog, "u_Time");
   }
 
   use() {
@@ -51,7 +57,27 @@ class ShaderProgram {
   }
 
   // TODO: add functions to modify uniforms
+  
+  //set time
+  setTime(t: number) {
+    this.use();
+    if(this.unifTime !== -1) {
+      gl.uniform1f(this.unifTime, t);
+    }
+  }
 
+  //set resolution height width
+  setResolution(h: number, w: number) {
+    this.use();
+    if(this.unifHeight !== -1) {
+      gl.uniform1f(this.unifHeight, h);
+    }
+    if(this.unifWidth !== -1) {
+      gl.uniform1f(this.unifWidth, w);
+    }
+  }
+
+  //drawing
   draw(d: Drawable) {
     this.use();
 
