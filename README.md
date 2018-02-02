@@ -63,7 +63,7 @@ Write-Up
     * In addition to light source, used a cosine color palette
 
 ScreenShot: 
-[!tata]
+![](tata.png)
 4. Optional features (for added credit):
     * Ambient occlusion
     * Soft shadows
