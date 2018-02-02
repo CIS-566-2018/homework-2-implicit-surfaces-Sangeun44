@@ -49,8 +49,10 @@ We would suggest editing your project with Visual Studio Code https://code.visua
 Name: Sang Lee
 pennkey: eunsang
 
-1. Created a rayTracer with camera pos to rayMarch.
-2. Created a normal estimator depending on the ray marcher.
+1. Created a rayTracer with camera pos to rayMarch with basecode provided by[Jamie Wong](http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/)
+
+2. Created a normal estimator depending on the ray marcher with basecode provided by [Jamie Wong](http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/)
+
 3. TATA was created with 
     * union, intersection, subtraction, smooth blend operations
 4. Floor
